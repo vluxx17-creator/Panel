@@ -1,0 +1,789 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<title>Панель модерации</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<style>
+  :root{
+    --accent:#ff3b3b; --accent-2:#b71c1c; --accent-soft:rgba(255,59,59,.16);
+    --bg-0:#0a0a0a; --bg-1:#141414; --bg-2:#1b1b1b; --line:rgba(255,255,255,.07);
+    --txt:#f5f5f5; --txt-dim:#8b8b8b; --ok:#2ecc71; --warn:#f0a020; --bad:#ff5252;
+    --radius:18px; --sheet-radius:26px;
+  }
+  [data-theme="gold"]   {--accent:#e8c07a; --accent-2:#8a6a2f; --accent-soft:rgba(232,192,122,.16)}
+  [data-theme="red"]    {--accent:#ff3b3b; --accent-2:#b71c1c; --accent-soft:rgba(255,59,59,.16)}
+  [data-theme="blue"]   {--accent:#3b6dff; --accent-2:#17348f; --accent-soft:rgba(59,109,255,.16)}
+  [data-theme="green"]  {--accent:#35c46a; --accent-2:#16653a; --accent-soft:rgba(53,196,106,.16)}
+  [data-theme="violet"] {--accent:#9b4dff; --accent-2:#5a1fa8; --accent-soft:rgba(155,77,255,.16)}
+  [data-theme="white"]  {--accent:#dfe4ee; --accent-2:#8b93a3; --accent-soft:rgba(223,228,238,.14)}
+  [data-theme="ny"]     {--accent:#57c8ff; --accent-2:#1a6a99; --accent-soft:rgba(87,200,255,.16)}
+  [data-theme="hween"]  {--accent:#ff8a1f; --accent-2:#8f4400; --accent-soft:rgba(255,138,31,.16)}
+  [data-theme="love"]   {--accent:#ff5fa2; --accent-2:#a01f5c; --accent-soft:rgba(255,95,162,.16)}
+  [data-theme="summer"] {--accent:#3ecfb2; --accent-2:#14766a; --accent-soft:rgba(62,207,178,.16)}
+
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{margin:0;padding:0;background:var(--bg-0);color:var(--txt);
+    font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","Segoe UI",Roboto,sans-serif}
+  body{min-height:100vh;overflow-x:hidden}
+  body::before{content:"";position:fixed;inset:0;z-index:-2;
+    background:radial-gradient(120% 60% at 50% 0%,rgba(255,255,255,.05),transparent 60%),
+               linear-gradient(180deg,#171717 0%,#0d0d0d 45%,#060606 100%)}
+  body::after{content:"";position:fixed;left:50%;top:12%;width:70vw;height:70vw;transform:translateX(-50%);
+    z-index:-1;pointer-events:none;border-radius:50%;filter:blur(90px);opacity:.35;
+    background:radial-gradient(circle,var(--accent-soft),transparent 70%)}
+
+  .app{max-width:520px;margin:0 auto;padding:14px 14px 120px}
+  .glass{background:linear-gradient(180deg,rgba(255,255,255,.045),rgba(255,255,255,.02));
+    border:1px solid var(--line);border-radius:var(--radius);backdrop-filter:blur(14px);
+    -webkit-backdrop-filter:blur(14px);box-shadow:0 10px 30px rgba(0,0,0,.35)}
+  .muted{color:var(--txt-dim)}
+  .sec-title{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--txt-dim);margin:22px 4px 10px}
+  .row{display:flex;align-items:center;gap:10px}
+  .between{display:flex;align-items:center;justify-content:space-between;gap:10px}
+  .grow{flex:1;min-width:0}
+  .ellip{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+  /* header */
+  .brand{display:flex;align-items:center;gap:8px;font-weight:800;font-size:19px;letter-spacing:.02em}
+  .bolt{width:26px;height:26px;display:grid;place-items:center;border-radius:9px;
+    background:linear-gradient(160deg,var(--accent),var(--accent-2));font-size:14px}
+  .head{padding:12px 14px;margin-bottom:14px}
+  .ava{width:42px;height:42px;border-radius:50%;object-fit:cover;border:2px solid var(--accent);
+    background:var(--bg-2)}
+  .ava.lg{width:86px;height:86px;border-width:3px}
+  .balance{font-weight:800;font-size:15px}
+  .balance small{color:var(--txt-dim);font-weight:600;font-size:11px;margin-left:3px}
+
+  .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+  .stat{padding:12px 8px;text-align:center;border-radius:14px}
+  .stat b{display:block;font-size:17px;margin-bottom:2px}
+  .stat span{font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--txt-dim)}
+
+  .cards{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .card{padding:12px;border-radius:16px;transition:transform .18s ease,border-color .18s}
+  .card:active{transform:scale(.97)}
+  .card .ico{font-size:30px;text-align:center;margin:6px 0 10px}
+  .card .nm{font-size:13px;font-weight:700}
+  .card .pr{font-size:12px;color:var(--accent);font-weight:700;margin-top:2px}
+  .empty{padding:26px 14px;text-align:center;color:var(--txt-dim);font-size:13px}
+
+  .btn{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;border:0;
+    padding:15px 16px;border-radius:16px;font-size:15px;font-weight:800;color:#fff;cursor:pointer;
+    background:linear-gradient(180deg,var(--accent),var(--accent-2));
+    box-shadow:0 8px 24px var(--accent-soft);transition:transform .15s}
+  .btn:active{transform:scale(.98)}
+  .btn.ghost{background:rgba(255,255,255,.05);border:1px solid var(--line);box-shadow:none;color:var(--txt)}
+  .btn.sm{padding:11px 12px;font-size:13px;border-radius:13px}
+  .btn.warnline{background:rgba(255,59,59,.08);border:1px solid rgba(255,59,59,.35);
+    color:var(--bad);box-shadow:none;flex-direction:column;gap:2px}
+  .btn.warnline small{font-weight:600;opacity:.8}
+
+  .tabs{display:flex;gap:8px;overflow-x:auto;scrollbar-width:none;padding:2px}
+  .tabs::-webkit-scrollbar{display:none}
+  .chip{flex:0 0 auto;padding:10px 18px;border-radius:999px;border:1px solid var(--line);
+    background:rgba(255,255,255,.03);color:var(--txt-dim);font-size:13px;font-weight:700}
+  .chip.on{background:linear-gradient(180deg,var(--accent),var(--accent-2));color:#fff;border-color:transparent;
+    box-shadow:0 6px 18px var(--accent-soft)}
+
+  .list-item{display:flex;align-items:center;gap:12px;padding:14px;border-radius:16px;margin-bottom:8px}
+  .list-item .ic{width:34px;height:34px;flex:0 0 34px;display:grid;place-items:center;border-radius:11px;
+    background:rgba(255,255,255,.05);font-size:16px}
+  .list-item .t{font-size:14px;font-weight:700}
+  .list-item .s{font-size:11px;color:var(--txt-dim);margin-top:2px}
+  .arrow{color:var(--txt-dim);font-size:18px}
+
+  .badge{font-size:10px;font-weight:800;padding:5px 9px;border-radius:8px;white-space:nowrap}
+  .b-ok{background:rgba(46,204,113,.14);color:var(--ok)}
+  .b-wait{background:rgba(240,160,32,.14);color:var(--warn)}
+  .b-no{background:rgba(255,255,255,.07);color:var(--txt-dim)}
+
+  /* podium */
+  .podium{display:grid;grid-template-columns:1fr 1.15fr 1fr;gap:8px;align-items:end;margin-top:6px}
+  .pod{padding:12px 6px 14px;border-radius:16px;text-align:center}
+  .pod.first{background:linear-gradient(180deg,var(--accent-soft),rgba(255,255,255,.02));
+    border-color:var(--accent)}
+  .pod .rk{font-size:20px;font-weight:900;color:var(--accent)}
+  .pod .nm{font-size:12px;font-weight:700;margin-top:6px}
+  .pod .am{font-size:11px;color:var(--txt-dim)}
+  .pod .ava{margin:0 auto 6px;width:44px;height:44px}
+  .rank-n{width:26px;height:26px;flex:0 0 26px;border-radius:50%;background:rgba(255,255,255,.06);
+    display:grid;place-items:center;font-size:12px;font-weight:800;color:var(--txt-dim)}
+
+  /* level + chart */
+  .bar{height:8px;border-radius:999px;background:rgba(255,255,255,.07);overflow:hidden;margin:12px 0 8px}
+  .bar>i{display:block;height:100%;border-radius:999px;background:linear-gradient(90deg,var(--accent-2),var(--accent))}
+  .lv-row{display:flex;justify-content:space-between;font-size:11px;color:var(--txt-dim);font-weight:700}
+  .lv-row .on{color:var(--accent)}
+  .chart{display:flex;align-items:flex-end;gap:3px;height:130px;padding:10px 4px 0}
+  .chart>i{flex:1;min-width:2px;border-radius:3px 3px 0 0;background:linear-gradient(180deg,var(--accent),var(--accent-2));
+    opacity:.9}
+  .hr{height:1px;background:var(--line);margin:14px 0}
+
+  input,textarea,select{width:100%;padding:14px;border-radius:14px;border:1px solid var(--line);
+    background:rgba(255,255,255,.04);color:var(--txt);font-size:15px;font-family:inherit;outline:none}
+  input:focus,textarea:focus{border-color:var(--accent)}
+  label.fl{display:block;font-size:13px;font-weight:700;margin:0 0 8px}
+  .hint{font-size:11px;color:var(--txt-dim);margin-top:7px}
+  .drop{border:1px dashed rgba(255,255,255,.22);border-radius:16px;padding:26px 14px;text-align:center;
+    font-size:14px;font-weight:700}
+  .drop small{display:block;font-weight:500;color:var(--txt-dim);margin-top:4px}
+  .drop.done{border-color:var(--ok);color:var(--ok)}
+
+  /* bottom sheet */
+  .sheet-bg{position:fixed;inset:0;background:rgba(0,0,0,.55);backdrop-filter:blur(3px);z-index:40;
+    opacity:0;pointer-events:none;transition:opacity .22s}
+  .sheet-bg.on{opacity:1;pointer-events:auto}
+  .sheet{position:fixed;left:0;right:0;bottom:0;z-index:41;max-width:520px;margin:0 auto;
+    background:linear-gradient(180deg,#1c1c1c,#111);border:1px solid var(--line);border-bottom:0;
+    border-radius:var(--sheet-radius) var(--sheet-radius) 0 0;padding:20px 16px calc(22px + env(safe-area-inset-bottom));
+    max-height:88vh;overflow-y:auto;transform:translateY(102%);transition:transform .28s cubic-bezier(.2,.8,.2,1)}
+  .sheet.on{transform:translateY(0)}
+  .sheet h3{margin:0 0 16px;font-size:21px;font-weight:800}
+  .x{width:38px;height:38px;flex:0 0 38px;border-radius:50%;border:0;background:rgba(255,255,255,.07);
+    color:var(--txt);font-size:17px;cursor:pointer}
+  .steps{display:flex;gap:5px;margin:-6px 0 8px}
+  .steps>i{flex:1;height:3px;border-radius:2px;background:rgba(255,255,255,.1)}
+  .steps>i.on{background:var(--accent)}
+
+  /* nav */
+  .nav{position:fixed;left:0;right:0;bottom:0;z-index:30;max-width:520px;margin:0 auto;
+    padding:10px 12px calc(12px + env(safe-area-inset-bottom));display:flex;align-items:center;gap:10px;
+    background:linear-gradient(180deg,rgba(10,10,10,.6),rgba(6,6,6,.95));backdrop-filter:blur(16px)}
+  .nav .more,.nav .me{width:54px;height:54px;flex:0 0 54px;border-radius:50%;border:1px solid var(--line);
+    background:rgba(255,255,255,.04);display:grid;place-items:center;font-size:11px;color:var(--txt-dim);
+    cursor:pointer;gap:0}
+  .nav .more.on,.nav .me.on{border-color:var(--accent);color:var(--accent)}
+  .nav .me{padding:0;overflow:hidden}
+  .nav .me img{width:100%;height:100%;object-fit:cover}
+  .navmid{flex:1;display:flex;border:1px solid var(--line);border-radius:999px;padding:5px;
+    background:rgba(255,255,255,.03)}
+  .navmid button{flex:1;border:0;background:transparent;color:var(--txt-dim);font-size:11px;font-weight:700;
+    padding:8px 4px;border-radius:999px;cursor:pointer;display:grid;gap:2px;justify-items:center}
+  .navmid button b{font-size:16px;line-height:1}
+  .navmid button.on{color:var(--accent);background:var(--accent-soft);
+    box-shadow:inset 0 0 0 1px var(--accent-soft)}
+
+  .duck{display:inline-block;font-size:20px;animation:sway 1.6s ease-in-out infinite}
+  @keyframes sway{0%,100%{transform:rotate(-12deg)}50%{transform:rotate(12deg)}}
+  .page{animation:in .28s ease}
+  @keyframes in{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+  .link{color:var(--accent);text-decoration:none;font-weight:700}
+  .toast{position:fixed;left:50%;top:18px;transform:translate(-50%,-140%);z-index:60;padding:12px 18px;
+    border-radius:14px;background:#222;border:1px solid var(--line);font-size:13px;font-weight:700;
+    transition:transform .25s;max-width:90vw;text-align:center}
+  .toast.on{transform:translate(-50%,0)}
+  .mono{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px;word-break:break-all}
+</style>
+</head>
+<body>
+<div class="app">
+  <!-- ======== HEADER ======== -->
+  <div class="head glass between">
+    <div class="brand"><span class="bolt">⚡</span><span id="brandName">Панель</span></div>
+    <div class="row">
+      <div style="text-align:right">
+        <div style="font-size:13px;font-weight:800" id="hName">—</div>
+        <div style="font-size:11px" class="muted" id="hUser">@—</div>
+      </div>
+      <img class="ava" id="hAva" alt="">
+    </div>
+  </div>
+
+  <div id="view"></div>
+</div>
+
+<!-- ======== NAV ======== -->
+<div class="nav">
+  <button class="more" id="navMore" onclick="go('more')">···<div>Ещё</div></button>
+  <div class="navmid">
+    <button data-nav="home"   onclick="go('home')"><b>⌂</b>Главная</button>
+    <button data-nav="profit" onclick="go('profit')"><b>◍</b>Профит</button>
+    <button data-nav="top"    onclick="go('top')"><b>★</b>Топ</button>
+  </div>
+  <button class="me" id="navMe" onclick="go('profile')"><img id="navAva" alt=""></button>
+</div>
+
+<div class="sheet-bg" id="sheetBg" onclick="closeSheet()"></div>
+<div class="sheet" id="sheet"></div>
+<div class="toast" id="toast"></div>
+
+<script>
+/* ================= config ================= */
+const CFG = {
+  // Адрес REST API бота. Пустая строка => демо-режим на localStorage.
+  API: (localStorage.getItem('api_base') || window.API_BASE || ''),
+  BRAND: 'Панель',
+  RULES_URL: 'https://telegram.org/blog/telegram-web-apps',
+  CURRENCY: 'TON'
+};
+const THEMES = [
+  ['gold','Золотая','#e8c07a'],['red','Красная','#ff3b3b'],['blue','Синяя','#3b6dff'],
+  ['green','Зелёная','#35c46a'],['violet','Фиолетовая','#9b4dff'],['white','Белая','#dfe4ee'],
+  ['ny','Новогодняя','❄️'],['hween','Хэллоуин','🎃'],['love','Романтика','💗'],['summer','Лето','☀️']
+];
+const tg = window.Telegram && window.Telegram.WebApp ? window.Telegram.WebApp : null;
+if (tg) { tg.ready(); tg.expand(); }
+
+/* ================= state ================= */
+const store = {
+  get(k, d){ try{ const v = localStorage.getItem('mp_'+k); return v===null?d:JSON.parse(v);}catch(e){return d} },
+  set(k, v){ localStorage.setItem('mp_'+k, JSON.stringify(v)); }
+};
+let ME = {
+  id: tg && tg.initDataUnsafe.user ? tg.initDataUnsafe.user.id : 0,
+  name: tg && tg.initDataUnsafe.user ? (tg.initDataUnsafe.user.first_name || 'Модератор') : 'Модератор',
+  username: tg && tg.initDataUnsafe.user ? (tg.initDataUnsafe.user.username || '') : 'demo',
+  photo: tg && tg.initDataUnsafe.user ? (tg.initDataUnsafe.user.photo_url || '') : '',
+  balance: 0, earned: 0, payouts: 0, place: '—', streak: 0, referrals: 0,
+  wallet: store.get('wallet',''), level: 1, limit_used: 0, limit_total: 250,
+  role: 'Модератор', join_status: 'pending', chart: new Array(30).fill(0)
+};
+let TASKS = [], LEADERS = [], HISTORY = [], PERIOD = 'all', PAGE = 'home';
+
+/* ================= api ================= */
+async function api(path, body){
+  if (!CFG.API) return null;
+  const init = { method: body ? 'POST' : 'GET', headers: {'Content-Type':'application/json'} };
+  const payload = Object.assign({ init_data: tg ? tg.initData : '' }, body || {});
+  if (body) init.body = JSON.stringify(payload);
+  const url = CFG.API.replace(/\/$/,'') + path + (body ? '' : '?init_data=' + encodeURIComponent(tg ? tg.initData : ''));
+  const r = await fetch(url, init);
+  if (!r.ok) throw new Error('HTTP ' + r.status);
+  return r.json();
+}
+async function loadAll(){
+  try {
+    const d = await api('/api/me');
+    if (d) {
+      Object.assign(ME, d.user || {});
+      TASKS = d.tasks || []; HISTORY = d.history || []; LEADERS = d.leaders || [];
+    }
+  } catch(e){ toast('Нет связи с сервером — демо-режим'); }
+  if (!CFG.API) {
+    HISTORY = store.get('history', []);
+    ME.payouts = HISTORY.filter(h => h.status === 'accepted').length;
+    ME.earned  = HISTORY.filter(h => h.status === 'accepted').reduce((s,h)=>s+(+h.amount||0),0);
+    ME.balance = ME.earned;
+  }
+  paintHeader(); render();
+}
+
+/* ================= ui helpers ================= */
+function toast(t){ const el = document.getElementById('toast'); el.textContent = t;
+  el.classList.add('on'); clearTimeout(el._t); el._t = setTimeout(()=>el.classList.remove('on'), 2200); }
+function fmt(n){ return (Math.round((+n||0)*100)/100).toFixed(2); }
+function esc(s){ return String(s==null?'':s).replace(/[&<>"']/g, c =>
+  ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function avatar(url, cls){ const u = url || 'data:image/svg+xml;utf8,' + encodeURIComponent(
+  '<svg xmlns="http://www.w3.org/2000/svg" width="80" height="80"><rect width="80" height="80" fill="%231f1f1f"/></svg>');
+  return `<img class="ava ${cls||''}" src="${esc(u)}" alt="">`; }
+function haptic(){ if (tg && tg.HapticFeedback) tg.HapticFeedback.impactOccurred('light'); }
+
+function paintHeader(){
+  document.getElementById('brandName').textContent = CFG.BRAND;
+  document.getElementById('hName').textContent = ME.name;
+  document.getElementById('hUser').textContent = ME.username ? '@' + ME.username : '';
+  const src = ME.photo || '';
+  document.getElementById('hAva').src = src ||
+    'data:image/svg+xml;utf8,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="80" height="80"><rect width="80" height="80" fill="%231f1f1f"/></svg>');
+  document.getElementById('navAva').src = document.getElementById('hAva').src;
+}
+
+/* ================= sheets ================= */
+function sheet(title, html){
+  const s = document.getElementById('sheet');
+  s.innerHTML = `<div class="between" style="margin-bottom:14px">
+      <h3 style="margin:0">${esc(title)}</h3><button class="x" onclick="closeSheet()">✕</button></div>${html}`;
+  s.classList.add('on'); document.getElementById('sheetBg').classList.add('on'); haptic();
+}
+function closeSheet(){ document.getElementById('sheet').classList.remove('on');
+  document.getElementById('sheetBg').classList.remove('on'); }
+
+/* ================= router ================= */
+function go(p){ PAGE = p; haptic(); closeSheet();
+  document.querySelectorAll('[data-nav]').forEach(b => b.classList.toggle('on', b.dataset.nav === p));
+  document.getElementById('navMore').classList.toggle('on', p === 'more');
+  document.getElementById('navMe').classList.toggle('on', p === 'profile');
+  window.scrollTo({ top: 0 }); render();
+}
+function render(){
+  const v = document.getElementById('view');
+  v.innerHTML = ({ home: vHome, profit: vProfit, top: vTop, more: vMore, profile: vProfile }[PAGE] || vHome)();
+  v.className = 'page';
+}
+
+/* ================= pages ================= */
+function vHome(){
+  const cards = TASKS.length
+    ? TASKS.map(t => `<div class="glass card"><div class="ico">${esc(t.icon || '🛡')}</div>
+        <div class="nm ellip">${esc(t.title)}</div><div class="pr">${fmt(t.price)} ${CFG.CURRENCY}</div></div>`).join('')
+    : `<div class="glass empty" style="grid-column:1/-1">У вас пока нет закрытых задач</div>`;
+  return `
+  <div class="stats">
+    ${stat(fmt(ME.balance), CFG.CURRENCY)}
+    ${stat(fmt(ME.earned), 'Профит')}
+    ${stat('#' + ME.place, 'Место')}
+    ${stat(ME.streak, 'Стрик')}
+  </div>
+
+  <div class="between" style="margin:22px 4px 10px">
+    <div class="sec-title" style="margin:0">витрина задач команды</div>
+    <div class="muted" style="font-size:11px">Заявки · Топ</div>
+  </div>
+  <div class="cards">${cards}</div>
+
+  <div class="glass" style="padding:14px;margin-top:14px">
+    <div class="between">
+      <div><a class="link" href="${esc(CFG.RULES_URL)}" target="_blank" rel="noopener">Регламент модерации</a>
+      <div class="hint" style="margin-top:2px">правила смен и начислений</div></div>
+      <div class="duck">🦆</div>
+    </div>
+  </div>
+
+  <button class="btn" style="margin-top:14px" onclick="go('profit')">Запросить выплату</button>
+
+  <div class="sec-title">приглашай и зарабатывай</div>
+  <div class="glass" style="padding:16px">
+    <div style="font-size:15px;font-weight:800">Позови коллегу в модерацию</div>
+    <div class="hint">Бонус начисляется после его первой закрытой смены.</div>
+    <button class="btn ghost sm" style="margin-top:12px" onclick="invite()">Пригласить друзей</button>
+  </div>`;
+}
+function stat(b, s){ return `<div class="glass stat"><b>${esc(b)}</b><span>${esc(s)}</span></div>`; }
+
+function vProfit(){
+  const h = HISTORY.length ? HISTORY.map(rowHistory).join('')
+    : `<div class="glass empty">Заявок пока нет</div>`;
+  const agg = aggregate(PERIOD);
+  return `
+  <div style="text-align:center;padding:6px 0 14px">
+    <div style="font-size:56px">💸</div>
+    <div style="font-size:22px;font-weight:800">${esc(CFG.BRAND)}</div>
+    <div class="muted" style="font-size:13px">запрос выплаты за модерацию</div>
+  </div>
+  <button class="btn" onclick="payoutWizard(1)">＋ Запросить выплату</button>
+
+  <div class="glass" style="padding:14px;margin-top:14px">
+    <div class="tabs">${periodChips()}</div>
+    <div style="margin-top:14px">
+      <div class="muted" style="font-size:12px">Заработал этот период</div>
+      <div style="font-size:26px;font-weight:900;color:var(--accent)">${fmt(agg.sum)} ◈</div>
+    </div>
+    <div class="hr"></div>
+    <div class="between" style="font-size:13px"><span class="muted">Профит</span><b>${fmt(agg.sum)} ${CFG.CURRENCY}</b></div>
+    <div class="hr"></div>
+    <div class="between" style="font-size:13px"><span class="muted">Выплат</span><b>${agg.count} 🎁</b></div>
+    <div class="hr"></div>
+    <div class="between" style="font-size:13px"><span class="muted">Средний профит</span><b>${fmt(agg.avg)} ${CFG.CURRENCY}</b></div>
+  </div>
+
+  <div class="sec-title">история</div>${h}`;
+}
+function rowHistory(x){
+  const b = x.status === 'accepted' ? '<span class="badge b-ok">Принято</span>'
+          : x.status === 'pending'  ? '<span class="badge b-wait">В обработке</span>'
+          : '<span class="badge b-no">Отменено</span>';
+  return `<div class="glass list-item"><div class="ic">◈</div>
+    <div class="grow"><div class="t ellip">${esc(x.code || '—')}</div>
+    <div class="s">${esc(x.requested_at || '')}${x.amount ? ' · ' + fmt(x.amount) + ' ' + CFG.CURRENCY : ''}</div></div>${b}</div>`;
+}
+function periodChips(){
+  return [['all','Всё время'],['month','Месяц'],['week','Неделя'],['day','День']]
+    .map(([k,t]) => `<button class="chip ${PERIOD===k?'on':''}" onclick="PERIOD='${k}';render()">${t}</button>`).join('');
+}
+function aggregate(p){
+  const now = Date.now(), win = { day:1, week:7, month:30 }[p];
+  const rows = HISTORY.filter(h => h.status === 'accepted').filter(h => {
+    if (!win) return true;
+    const t = Date.parse(h.requested_at_iso || h.requested_at || '');
+    return isNaN(t) ? true : (now - t) <= win * 864e5;
+  });
+  const sum = rows.reduce((s,h) => s + (+h.amount || 0), 0);
+  return { sum, count: rows.length, avg: rows.length ? sum / rows.length : 0 };
+}
+
+function vTop(){
+  const L = LEADERS.length ? LEADERS : [];
+  const top3 = L.slice(0,3), rest = L.slice(3);
+  const pod = i => { const u = top3[i]; if (!u) return `<div class="glass pod"><div class="rk">${i+1}</div></div>`;
+    return `<div class="glass pod ${i===0?'first':''}">${avatar(u.photo)}<div class="rk">${i+1}</div>
+      <div class="nm ellip">${esc(u.name)}</div><div class="am">${fmt(u.amount)} ${CFG.CURRENCY}</div></div>`; };
+  return `
+  <div style="text-align:center;padding:4px 0 12px">
+    <div style="font-size:22px;font-weight:800">${esc(CFG.BRAND)}</div>
+    <div class="muted" style="font-size:13px">таблица лидеров команды</div>
+  </div>
+  <div class="tabs">${periodChips()}</div>
+  <div class="podium" style="margin-top:14px">${pod(1)}${pod(0)}${pod(2)}</div>
+  <div class="sec-title">остальные</div>
+  ${rest.length ? rest.map((u,i) => `<div class="glass list-item">
+      <div class="rank-n">${i+4}</div><div class="grow"><div class="t ellip">${esc(u.name)}</div>
+      <div class="s">${u.payouts || 0} выплат</div></div>
+      <b style="font-size:13px">${fmt(u.amount)} ${CFG.CURRENCY}</b></div>`).join('')
+    : `<div class="glass empty">Пока пусто</div>`}`;
+}
+
+const MORE = [
+  ['🎁','Розыгрыши','Конкурсы команды', 'raffles'],
+  ['🎓','Менторы','Наставники команды', 'mentors'],
+  ['🏷','Промокод','Активировать код', 'promo'],
+  ['🏆','Рейтинг','Твоё место', 'rating'],
+  ['⚔️','Дуэли','Вызов коллег 1 на 1', 'duels'],
+  ['🥇','Достижения','Ачивки и твоя лига', 'achievements'],
+  ['👑','Зал славы','Топ смен команды', 'hall'],
+  ['🔔','Командный чат','Общение команды', 'chat'],
+  ['📦','Мои задачи','Закрытые смены', 'mytasks'],
+  ['🔗','Рефералы','Пригласи друга', 'refs'],
+  ['🖼','Обои','Оформить фон', 'wall'],
+  ['☀️','Настройки','Никнейм · кошелёк · тема', 'settings'],
+  ['🛡','Админ-панель','Заявки и рассылка', 'admin']
+];
+function vMore(){
+  return MORE.map(([ic,t,s,k]) => `<div class="glass list-item" onclick="openMore('${k}')">
+    <div class="ic">${ic}</div><div class="grow"><div class="t">${t}</div><div class="s">${s}</div></div>
+    <div class="arrow">›</div></div>`).join('');
+}
+
+function vProfile(){
+  const pct = Math.max(3, Math.min(100, Math.round((ME.earned % 10) * 10)));
+  const bars = (ME.chart && ME.chart.length ? ME.chart : new Array(30).fill(0));
+  const mx = Math.max.apply(null, bars.concat([1]));
+  return `
+  <div style="text-align:center;padding:2px 0 10px">
+    <div style="font-size:56px">🏆</div>
+    <div style="font-size:22px;font-weight:800">${esc(CFG.BRAND)}</div>
+    <div class="muted" style="font-size:13px">личный профиль</div>
+  </div>
+  <div class="glass" style="padding:14px">
+    <div class="row">${avatar(ME.photo)}<div class="grow">
+      <div style="font-size:16px;font-weight:800">${esc(ME.name)}</div>
+      <div class="muted" style="font-size:12px">${ME.username ? '@' + esc(ME.username) : ''}</div>
+      <div class="badge b-ok" style="display:inline-block;margin-top:6px">✓ ${esc(ME.role)}</div>
+    </div></div>
+  </div>
+  <div class="stats" style="grid-template-columns:repeat(3,1fr);margin-top:10px">
+    ${stat(fmt(ME.earned) + ' ' + CFG.CURRENCY, 'Заработано')}
+    ${stat(ME.payouts, 'Выплат')}
+    ${stat('#' + ME.place, 'Место')}
+  </div>
+
+  <div class="sec-title">уровень и лимит USDT</div>
+  <div class="glass" style="padding:16px">
+    <div class="between"><b style="font-size:16px">Уровень ${ME.level}</b>
+      <span class="badge" style="background:var(--accent-soft);color:var(--accent)">${fmt(ME.earned)} ${CFG.CURRENCY}</span></div>
+    <div class="bar"><i style="width:${pct}%"></i></div>
+    <div class="lv-row"><span class="on">Ур. 1</span><span>Ур. 2</span><span>Ур. 3</span><span>Ур. 4</span></div>
+    <div class="hint">До уровня ${ME.level + 1}: ещё ${fmt(Math.max(0, 10 - (ME.earned % 10)))} ${CFG.CURRENCY}.</div>
+    <div class="hr"></div>
+    <div class="between"><span class="muted" style="font-size:13px">Лимит USDT сегодня</span>
+      <b>${ME.limit_total - ME.limit_used} из ${ME.limit_total}</b></div>
+    <div class="bar"><i style="width:${Math.round(ME.limit_used / ME.limit_total * 100)}%"></i></div>
+    <div class="hint">Потрачено сегодня: ${ME.limit_used} USDT · сброс в 00:00 МСК</div>
+  </div>
+
+  <div class="sec-title">📈 график выплат за месяц</div>
+  <div class="glass" style="padding:10px 12px">
+    <div class="chart">${bars.map(v => `<i style="height:${Math.max(2, v / mx * 100)}%"></i>`).join('')}</div>
+    <div class="hint" style="text-align:center">Профит по дням за последние 30 дней</div>
+  </div>
+
+  <div class="sec-title">статистика</div>
+  <div class="stats" style="grid-template-columns:1fr 1fr">
+    ${stat(ME.streak, 'Стрик 🔥')}${stat(ME.referrals, 'Рефералы 🔗')}
+  </div>
+
+  <div class="sec-title">кошелёк ${CFG.CURRENCY}</div>
+  <div class="glass list-item">
+    <div class="grow mono">${esc(ME.wallet || 'не указан')}</div>
+    <button class="btn ghost sm" style="width:auto" onclick="editWallet()">Изменить</button>
+  </div>
+
+  <div class="sec-title">заявка</div>
+  <div class="glass list-item">
+    <div class="grow"><div class="t">Статус заявки</div><div class="s">На вступление в команду</div></div>
+    ${ME.join_status === 'accepted' ? '<span class="badge b-ok">Принята</span>' : '<span class="badge b-wait">В обработке</span>'}
+  </div>
+
+  <div class="sec-title">настройки профиля</div>
+  <div class="cards">
+    <button class="btn ghost sm" onclick="editNick()">✎ Никнейм</button>
+    <button class="btn ghost sm" onclick="editWallet()">▣ Кошелёк</button>
+    <button class="btn ghost sm" onclick="openMore('account')">🔒 Аккаунт</button>
+    <button class="btn ghost sm" onclick="openMore('theme')">🖼 Тема</button>
+  </div>`;
+}
+
+/* ================= actions ================= */
+function invite(){
+  const link = 'https://t.me/share/url?url=' + encodeURIComponent(
+    (store.get('ref_link','') || 'https://t.me/') + (ME.id ? '?start=ref' + ME.id : ''));
+  if (tg) tg.openTelegramLink(link); else { navigator.clipboard.writeText(link); toast('Ссылка скопирована'); }
+}
+function editWallet(){
+  sheet('Кошелёк ' + CFG.CURRENCY, `
+    <label class="fl">Адрес кошелька</label>
+    <input id="wIn" placeholder="UQ… или EQ…" value="${esc(ME.wallet)}">
+    <div class="hint">Адрес используется для выплат за смены.</div>
+    <button class="btn" style="margin-top:14px" onclick="saveWallet()">Сохранить</button>`);
+}
+async function saveWallet(){
+  const w = document.getElementById('wIn').value.trim();
+  if (!/^[EU]Q[A-Za-z0-9_-]{46}$/.test(w)) return toast('Неверный формат адреса');
+  ME.wallet = w; store.set('wallet', w);
+  try { await api('/api/wallet', { wallet: w }); } catch(e){}
+  closeSheet(); render(); toast('Кошелёк сохранён');
+}
+function editNick(){
+  sheet('Никнейм', `<label class="fl">Отображаемое имя</label>
+    <input id="nIn" maxlength="24" value="${esc(ME.name)}">
+    <button class="btn" style="margin-top:14px" onclick="saveNick()">Сохранить</button>`);
+}
+async function saveNick(){
+  const n = document.getElementById('nIn').value.trim();
+  if (n.length < 2) return toast('Слишком коротко');
+  ME.name = n; store.set('nick', n);
+  try { await api('/api/nick', { name: n }); } catch(e){}
+  closeSheet(); paintHeader(); render(); toast('Сохранено');
+}
+
+/* ---- payout wizard (5 шагов) ---- */
+const WZ = { code:'', link:'', shot:'', wallet:'', kind:'regular' };
+function payoutWizard(step){
+  const dots = n => `<div class="steps">${[1,2,3,4,5].map(i => `<i class="${i<=n?'on':''}"></i>`).join('')}</div>
+    <div class="hint" style="margin:0 0 14px;text-align:right">${n} / 5</div>`;
+  if (step === 1) sheet('Тег смены', dots(1) + `
+    <div class="hint" style="margin:0 0 10px">Скопируй тег смены из бота — он выглядит как <b>#SHIFT12#42</b>.
+      Если смена без тега — напиши «нет».</div>
+    <input id="f1" placeholder="#SHIFT12#42" value="${esc(WZ.code)}">
+    <button class="btn" style="margin-top:14px" onclick="wzNext(1)">Далее →</button>`);
+  if (step === 2) sheet('Ссылка на отчёт', dots(2) + `
+    <div class="hint" style="margin:0 0 10px">Вставь ссылку на сообщение/отчёт о смене. Если ссылок несколько — через запятую.</div>
+    <input id="f2" placeholder="https://t.me/c/123/456" value="${esc(WZ.link)}">
+    <div class="row" style="margin-top:14px;gap:8px">
+      <button class="btn ghost" style="width:64px" onclick="payoutWizard(1)">←</button>
+      <button class="btn" onclick="wzNext(2)">Далее →</button></div>`);
+  if (step === 3) sheet('Скриншот', dots(3) + `
+    <div class="drop ${WZ.shot?'done':''}" id="drop" onclick="document.getElementById('f3').click()">
+      ${WZ.shot ? 'Скриншот загружен!' : 'Загрузить скриншот'}<small>JPG, PNG — обязательно</small></div>
+    <input id="f3" type="file" accept="image/png,image/jpeg" style="display:none" onchange="pickShot(this)">
+    <div class="row" style="margin-top:14px;gap:8px">
+      <button class="btn ghost" style="width:64px" onclick="payoutWizard(2)">←</button>
+      <button class="btn" onclick="wzNext(3)">Далее →</button></div>`);
+  if (step === 4) sheet('Кошелёк ' + CFG.CURRENCY, dots(4) + `
+    <input id="f4" placeholder="UQ… или EQ…" value="${esc(WZ.wallet || ME.wallet)}">
+    <div class="hint">Куда отправить выплату за смену.</div>
+    <div class="row" style="margin-top:14px;gap:8px">
+      <button class="btn ghost" style="width:64px" onclick="payoutWizard(3)">←</button>
+      <button class="btn" onclick="wzNext(4)">Далее →</button></div>`);
+  if (step === 5) sheet('Подтверждение', dots(5) + `
+    <div class="glass" style="padding:14px">
+      <div class="between"><b>Обычная · ◈ ${CFG.CURRENCY}</b></div>
+      <div class="hint" style="margin-top:2px">Ставка по регламенту смены</div>
+      <div class="hr"></div>
+      <div class="hint">Тег смены</div><div style="font-weight:800">${esc(WZ.code)}</div>
+      <div class="hr"></div>
+      <div class="hint">Кошелёк ${CFG.CURRENCY}</div><div class="mono">${esc(WZ.wallet)}</div>
+      <div class="hr"></div>
+      <div class="hint">Отчёт</div><div class="mono">${esc(WZ.link)}</div>
+      <div class="hr"></div>
+      <div class="hint">Скриншот</div><div style="color:var(--ok);font-weight:800">Загружен</div>
+    </div>
+    <div class="row" style="margin-top:14px;gap:8px">
+      <button class="btn ghost" style="width:64px" onclick="payoutWizard(4)">←</button>
+      <button class="btn" onclick="submitPayout()">Отправить заявку</button></div>`);
+}
+function pickShot(inp){
+  const f = inp.files[0]; if (!f) return;
+  if (f.size > 5 * 1024 * 1024) return toast('Файл больше 5 МБ');
+  const r = new FileReader();
+  r.onload = () => { WZ.shot = r.result; const d = document.getElementById('drop');
+    d.classList.add('done'); d.innerHTML = 'Скриншот загружен!<small>Можно заменить</small>'; };
+  r.readAsDataURL(f);
+}
+function wzNext(step){
+  if (step === 1) { WZ.code = document.getElementById('f1').value.trim();
+    if (!WZ.code) return toast('Укажи тег смены или «нет»'); }
+  if (step === 2) { WZ.link = document.getElementById('f2').value.trim();
+    if (!/^https?:\/\//.test(WZ.link)) return toast('Нужна ссылка вида https://…'); }
+  if (step === 3) { if (!WZ.shot) return toast('Скриншот обязателен'); }
+  if (step === 4) { WZ.wallet = document.getElementById('f4').value.trim();
+    if (!/^[EU]Q[A-Za-z0-9_-]{46}$/.test(WZ.wallet)) return toast('Неверный адрес кошелька'); }
+  payoutWizard(step + 1);
+}
+async function submitPayout(){
+  const rec = { code: WZ.code, link: WZ.link, wallet: WZ.wallet, status: 'pending',
+    amount: 0, requested_at: new Date().toLocaleString('ru-RU'),
+    requested_at_iso: new Date().toISOString() };
+  try {
+    if (CFG.API) { await api('/api/payout', { code: WZ.code, link: WZ.link, wallet: WZ.wallet, shot: WZ.shot }); }
+    else if (tg) { tg.sendData(JSON.stringify({ type: 'payout', code: WZ.code, link: WZ.link, wallet: WZ.wallet })); }
+    HISTORY.unshift(rec); if (!CFG.API) store.set('history', HISTORY);
+    closeSheet(); go('profit'); toast('Заявка отправлена');
+  } catch(e){ toast('Ошибка отправки: ' + e.message); }
+}
+
+/* ---- more submenus ---- */
+async function openMore(k){
+  if (k === 'theme') return themeSheet();
+  if (k === 'settings') return sheet('Настройки', `
+    <div class="glass list-item" onclick="editNick()"><div class="ic">✎</div>
+      <div class="grow"><div class="t">Никнейм</div><div class="s">${esc(ME.name)}</div></div><div class="arrow">›</div></div>
+    <div class="glass list-item" onclick="editWallet()"><div class="ic">▣</div>
+      <div class="grow"><div class="t">Кошелёк</div><div class="s mono ellip">${esc(ME.wallet || 'не указан')}</div></div><div class="arrow">›</div></div>
+    <div class="glass list-item" onclick="themeSheet()"><div class="ic">🖼</div>
+      <div class="grow"><div class="t">Тема оформления</div><div class="s">${esc(themeName())}</div></div><div class="arrow">›</div></div>
+    <div class="glass list-item"><div class="ic">🔔</div>
+      <div class="grow"><div class="t">Уведомления</div><div class="s">о статусе заявок</div></div>
+      <span class="badge b-ok">Вкл</span></div>`);
+  if (k === 'admin') return adminGate();
+  if (k === 'refs') return sheet('Рефералы', `
+    <div class="glass" style="padding:16px"><div style="font-size:15px;font-weight:800">Твоя ссылка</div>
+      <div class="mono" style="margin-top:8px">${esc('https://t.me/?start=ref' + ME.id)}</div>
+      <button class="btn" style="margin-top:14px" onclick="invite()">Поделиться</button></div>
+    <div class="glass empty" style="margin-top:10px">Приглашено: ${ME.referrals}</div>`);
+  if (k === 'mytasks') return sheet('Мои задачи', TASKS.length
+    ? `<div class="cards">${TASKS.map(t => `<div class="glass card"><div class="ico">${esc(t.icon||'🛡')}</div>
+        <div class="nm ellip">${esc(t.title)}</div><div class="pr">${fmt(t.price)} ${CFG.CURRENCY}</div></div>`).join('')}</div>`
+    : `<div class="glass empty">Закрытых задач пока нет</div>`);
+  if (k === 'mentors') return sheet('Система менторов', `
+    <div class="hint" style="text-align:center;margin:-6px 0 10px">система наставников</div>
+    <button class="btn" onclick="toast('Заявка на наставника отправлена')">Стать наставником</button>
+    <div class="sec-title">активные менторы</div>
+    <div class="glass empty">Пока пусто</div>`);
+  if (k === 'chat') return chatSheet();
+  if (k === 'promo') return sheet('Промокод', `
+    <label class="fl">Введи код</label><input id="pIn" placeholder="TEAM2024">
+    <button class="btn" style="margin-top:14px" onclick="applyPromo()">Активировать</button>`);
+  if (k === 'rating') { go('top'); return; }
+  if (k === 'account') return sheet('Аккаунт', `
+    <div class="glass list-item"><div class="grow"><div class="t">ID</div><div class="s mono">${ME.id}</div></div></div>
+    <div class="glass list-item"><div class="grow"><div class="t">Роль</div><div class="s">${esc(ME.role)}</div></div></div>
+    <div class="glass list-item"><div class="grow"><div class="t">Статус</div><div class="s">активен</div></div>
+      <span class="badge b-ok">OK</span></div>`);
+  const titles = { raffles:['Розыгрыши','Нет активных розыгрышей','Конкурс создаётся администратором'],
+    duels:['Дуэли','Нет активных дуэлей','Вызови коллегу 1 на 1'],
+    achievements:['Достижения','Пока нет достижений','Закрой первую смену'],
+    hall:['Зал славы','Пока пусто','Топ смен команды'],
+    wall:['Обои','Скоро','Оформление фона появится позже'] }[k] || ['Раздел','Скоро',''];
+  sheet(titles[0], `<div class="glass empty"><div style="font-size:16px;font-weight:800;color:var(--txt)">${titles[1]}</div>
+    <div style="margin-top:6px">${titles[2]}</div></div>`);
+}
+function applyPromo(){
+  const c = document.getElementById('pIn').value.trim();
+  if (!c) return toast('Введите код');
+  api('/api/promo', { code: c }).then(r => { toast(r && r.ok ? 'Код активирован' : 'Код не найден'); closeSheet(); })
+    .catch(() => { toast('Код не найден'); });
+}
+async function chatSheet(){
+  let msgs = [];
+  try { const r = await api('/api/chat'); msgs = (r && r.messages) || []; } catch(e){}
+  sheet('Командный чат', `
+    <div id="chatBox">${msgs.length ? msgs.map(m => `<div class="glass list-item">
+        ${avatar(m.photo)}<div class="grow"><div class="t">${esc(m.name)}</div>
+        <div class="s" style="white-space:normal">${esc(m.text)}</div></div>
+        <div class="hint">${esc(m.at || '')}</div></div>`).join('')
+      : `<div class="glass empty">Сообщений пока нет</div>`}</div>
+    <div class="row" style="margin-top:12px;gap:8px">
+      <input id="chatIn" placeholder="Сообщение…"><button class="btn" style="width:56px" onclick="sendChat()">➤</button></div>`);
+}
+async function sendChat(){
+  const t = document.getElementById('chatIn').value.trim(); if (!t) return;
+  try { await api('/api/chat', { text: t }); } catch(e){}
+  document.getElementById('chatIn').value = ''; chatSheet();
+}
+
+/* ---- theme ---- */
+function themeName(){ const t = store.get('theme','red'); const f = THEMES.find(x => x[0] === t); return f ? f[1] : 'Красная'; }
+function applyTheme(t){ document.documentElement.dataset.theme = t; store.set('theme', t); }
+function themeSheet(){
+  const cur = store.get('theme','red');
+  sheet('Тема оформления', `
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px">
+      ${THEMES.map(([k,n,c]) => `<div class="glass" style="padding:14px 6px;text-align:center;border-radius:16px;
+        ${k===cur?'border-color:var(--accent);box-shadow:0 0 0 1px var(--accent) inset':''}"
+        onclick="applyTheme('${k}');themeSheet();render()">
+        <div style="width:34px;height:34px;border-radius:50%;margin:0 auto 8px;display:grid;place-items:center;
+          font-size:18px;background:${c.startsWith('#') ? c : 'rgba(255,255,255,.06)'}">${c.startsWith('#') ? '' : c}</div>
+        <div style="font-size:12px;font-weight:700">${n}</div></div>`).join('')}
+    </div>
+    <div class="hint" style="text-align:center;margin-top:14px">Тема сохраняется для твоего аккаунта</div>`);
+}
+
+/* ---- admin ---- */
+function adminGate(){
+  sheet('Админ-панель', `
+    <label class="fl">Пароль</label>
+    <input id="aPass" type="password" placeholder="••••••••">
+    <div class="hint">Доступ только для администраторов команды.</div>
+    <button class="btn" style="margin-top:14px" onclick="adminLogin()">Войти</button>`);
+}
+async function adminLogin(){
+  const p = document.getElementById('aPass').value;
+  try {
+    const r = await api('/api/admin/login', { password: p });
+    if (!r || !r.ok) return toast('Неверный пароль');
+    sessionStorage.setItem('admin_token', r.token); adminPanel();
+  } catch(e){ toast('Нет доступа'); }
+}
+async function adminPanel(){
+  let list = [];
+  try { const r = await api('/api/admin/payouts', { token: sessionStorage.getItem('admin_token') });
+    list = (r && r.payouts) || []; } catch(e){ toast('Ошибка загрузки'); }
+  sheet('Заявки на выплату', `
+    ${list.length ? list.map(p => `<div class="glass" style="padding:14px;margin-bottom:10px">
+      <div class="between"><b>#${p.id} · ${esc(p.code || '—')}</b><span class="badge b-wait">${esc(p.status)}</span></div>
+      <div class="hint">user ${p.user_id} · ${esc(p.requested_at || '')}</div>
+      <div class="mono" style="margin-top:6px">${esc(p.wallet)}</div>
+      <div class="row" style="margin-top:10px;gap:8px">
+        <button class="btn sm" onclick="adminAccept(${p.id})">Принять</button>
+        <button class="btn ghost sm" onclick="adminReject(${p.id})">Отклонить</button></div></div>`).join('')
+      : `<div class="glass empty">Заявок нет</div>`}
+    <div class="sec-title">рассылка</div>
+    <textarea id="bcIn" rows="3" placeholder="Текст сообщения всем пользователям"></textarea>
+    <button class="btn ghost sm" style="margin-top:10px" onclick="adminBroadcast()">Отправить рассылку</button>`);
+}
+function adminAccept(id){
+  sheet('Принять заявку #' + id, `
+    <label class="fl">Сумма выплаты (${CFG.CURRENCY})</label>
+    <input id="amIn" inputmode="decimal" placeholder="Например: 1.5">
+    <div class="hint">Средства отправляются после подтверждения в кошельке администратора.</div>
+    <button class="btn" style="margin-top:14px" onclick="adminAcceptSend(${id})">Подтвердить</button>`);
+}
+async function adminAcceptSend(id){
+  const amount = parseFloat(document.getElementById('amIn').value.replace(',', '.'));
+  if (!(amount > 0)) return toast('Неверная сумма');
+  try {
+    const r = await api('/api/admin/accept', { token: sessionStorage.getItem('admin_token'), id, amount });
+    toast('Заявка принята');
+    if (r && r.pay_link && tg) tg.openLink(r.pay_link);
+    adminPanel();
+  } catch(e){ toast('Ошибка: ' + e.message); }
+}
+function adminReject(id){
+  sheet('Отклонить заявку #' + id, `
+    <label class="fl">Причина</label><input id="rsIn" placeholder="Например: нет отчёта по смене">
+    <button class="btn" style="margin-top:14px" onclick="adminRejectSend(${id})">Отклонить</button>`);
+}
+async function adminRejectSend(id){
+  const reason = document.getElementById('rsIn').value.trim();
+  if (!reason) return toast('Укажите причину');
+  try { await api('/api/admin/reject', { token: sessionStorage.getItem('admin_token'), id, reason });
+    toast('Заявка отклонена'); adminPanel(); } catch(e){ toast('Ошибка: ' + e.message); }
+}
+async function adminBroadcast(){
+  const text = document.getElementById('bcIn').value.trim();
+  if (!text) return toast('Введите текст');
+  try { const r = await api('/api/admin/broadcast', { token: sessionStorage.getItem('admin_token'), text });
+    toast('Отправлено: ' + ((r && r.sent) || 0)); } catch(e){ toast('Ошибка: ' + e.message); }
+}
+
+/* ================= boot ================= */
+applyTheme(store.get('theme','red'));
+if (store.get('nick','')) ME.name = store.get('nick','');
+go('home');
+loadAll();
+</script>
+</body>
+</html>
