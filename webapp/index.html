@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
-<title>Панель модерации</title>
+<title>Ryzen</title>
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
 <style>
   :root{
@@ -175,13 +175,37 @@
     transition:transform .25s;max-width:90vw;text-align:center}
   .toast.on{transform:translate(-50%,0)}
   .mono{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px;word-break:break-all}
+
+  /* splash */
+  .splash{position:fixed;inset:0;z-index:100;display:flex;flex-direction:column;align-items:center;
+    justify-content:center;gap:22px;background:radial-gradient(120% 70% at 50% 0%,rgba(255,255,255,.05),transparent 60%),
+    linear-gradient(180deg,#171717 0%,#0d0d0d 45%,#060606 100%);
+    transition:opacity .45s ease,visibility .45s ease}
+  .splash.off{opacity:0;visibility:hidden;pointer-events:none}
+  .splash .logo{width:96px;height:96px;border-radius:26px;display:grid;place-items:center;font-size:44px;
+    background:linear-gradient(160deg,var(--accent),var(--accent-2));box-shadow:0 18px 50px var(--accent-soft);
+    animation:pulse 1.6s ease-in-out infinite}
+  .splash .name{font-size:26px;font-weight:900;letter-spacing:.06em;
+    background:linear-gradient(90deg,var(--accent),#fff,var(--accent));background-size:200% 100%;
+    -webkit-background-clip:text;background-clip:text;color:transparent;animation:shine 2.2s linear infinite}
+  .splash .ring{width:34px;height:34px;border-radius:50%;border:3px solid rgba(255,255,255,.12);
+    border-top-color:var(--accent);animation:spin .8s linear infinite}
+  @keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.08)}}
+  @keyframes shine{0%{background-position:200% 0}100%{background-position:-200% 0}}
+  @keyframes spin{to{transform:rotate(360deg)}}
 </style>
 </head>
 <body>
+<div class="splash" id="splash">
+  <div class="logo">⚡</div>
+  <div class="name">Ryzen</div>
+  <div class="ring"></div>
+</div>
+
 <div class="app">
   <!-- ======== HEADER ======== -->
   <div class="head glass between">
-    <div class="brand"><span class="bolt">⚡</span><span id="brandName">Панель</span></div>
+    <div class="brand"><span class="bolt">⚡</span><span id="brandName">Ryzen</span></div>
     <div class="row">
       <div style="text-align:right">
         <div style="font-size:13px;font-weight:800" id="hName">—</div>
@@ -214,7 +238,7 @@
 const CFG = {
   // Адрес REST API бота. Пустая строка => демо-режим на localStorage.
   API: (localStorage.getItem('api_base') || window.API_BASE || ''),
-  BRAND: 'Панель',
+  BRAND: 'Ryzen',
   RULES_URL: 'https://telegram.org/blog/telegram-web-apps',
   CURRENCY: 'TON'
 };
@@ -267,8 +291,9 @@ async function loadAll(){
     ME.earned  = HISTORY.filter(h => h.status === 'accepted').reduce((s,h)=>s+(+h.amount||0),0);
     ME.balance = ME.earned;
   }
-  paintHeader(); render();
+  paintHeader(); render(); hideSplash();
 }
+function hideSplash(){ const s = document.getElementById('splash'); if (s) s.classList.add('off'); }
 
 /* ================= ui helpers ================= */
 function toast(t){ const el = document.getElementById('toast'); el.textContent = t;
@@ -784,6 +809,7 @@ applyTheme(store.get('theme','red'));
 if (store.get('nick','')) ME.name = store.get('nick','');
 go('home');
 loadAll();
+setTimeout(hideSplash, 5000);
 </script>
 </body>
 </html>
