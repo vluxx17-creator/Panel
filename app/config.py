@@ -18,7 +18,7 @@ def _chat_id(raw: str) -> int:
 # Секреты задаются только через окружение: держать их в коде нельзя.
 BOT_TOKEN = os.getenv("BOT_TOKEN", "")
 ADMIN_IDS = _ids(os.getenv("ADMIN_IDS", "8297446667"))
-GROUP_CHAT_ID = _chat_id(os.getenv("GROUP_CHAT_ID", ""))
+GROUP_CHAT_ID = _chat_id(os.getenv("GROUP_CHAT_ID", "-1004421628533"))
 
 WEBAPP_URL = os.getenv("WEBAPP_URL", "https://vluxx17-creator.github.io/Panel/")
 WEBHOOK_HOST = os.getenv("WEBHOOK_HOST", "")
