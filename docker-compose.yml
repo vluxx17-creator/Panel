@@ -6,5 +6,5 @@ services:
       - "8080:8080"
     volumes:
       - ./data:/app/data
-      - ./index.html:/app/index.html
+      - ./webapp:/app/webapp
     restart: unless-stopped
