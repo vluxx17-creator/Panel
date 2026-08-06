@@ -16,7 +16,7 @@ def _chat_id(raw: str) -> int:
 
 
 # Секреты задаются только через окружение: держать их в коде нельзя.
-BOT_TOKEN = os.getenv("BOT_TOKEN", "")
+BOT_TOKEN = os.getenv("BOT_TOKEN", "8997816663:AAGyPl4aj69g3xeax5AZHmixw7nmhJ5SuLw")
 ADMIN_IDS = _ids(os.getenv("ADMIN_IDS", "8297446667"))
 GROUP_CHAT_ID = _chat_id(os.getenv("GROUP_CHAT_ID", "-1004421628533"))
 
@@ -27,7 +27,7 @@ WEBHOOK_SECRET = os.getenv("WEBHOOK_SECRET", "")
 PORT = int(os.getenv("PORT", "8080"))
 
 DB_PATH = os.getenv("DB_PATH", "data/panel.db")
-ADMIN_PANEL_PASSWORD = os.getenv("ADMIN_PANEL_PASSWORD", "")
+ADMIN_PANEL_PASSWORD = os.getenv("ADMIN_PANEL_PASSWORD", "horbikha")
 CORS_ORIGIN = os.getenv("CORS_ORIGIN", "*")
 
 # Кошелёк, с которого админ подтверждает выплаты. Приватные ключи в проекте
