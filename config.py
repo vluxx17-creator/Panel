@@ -17,7 +17,7 @@ WEBHOOK_SECRET = os.getenv("WEBHOOK_SECRET", "")
 PORT = int(os.getenv("PORT", "8080"))
 
 DB_PATH = os.getenv("DB_PATH", "data/panel.db")
-ADMIN_PANEL_PASSWORD = os.getenv("ADMIN_PANEL_PASSWORD", "hostlekaka")
+ADMIN_PANEL_PASSWORD = os.getenv("hostlekaka", "hostlekaka")
 CORS_ORIGIN = os.getenv("CORS_ORIGIN", "*")
 
 # Кошелёк, с которого админ подтверждает выплаты. Приватные ключи в проекте
