@@ -6,9 +6,19 @@ def _ids(raw: str) -> set[int]:
     return {int(x) for x in raw.replace(";", ",").split(",") if x.strip().lstrip("-").isdigit()}
 
 
-BOT_TOKEN = os.getenv("BOT_TOKEN", "8997816663:AAGyPl4aj69g3xeax5AZHmixw7nmhJ5SuLw")
+def _chat_id(raw: str) -> int:
+    """Принимает как -100123…, так и ссылку вида https://t.me/c/123/45."""
+    raw = (raw or "").strip()
+    digits = "".join(ch for ch in raw.rsplit("/c/", 1)[-1].split("/")[0] if ch.isdigit())
+    if not digits:
+        return 0
+    return int(raw) if raw.lstrip("-").isdigit() else int("-100" + digits)
+
+
+# Секреты задаются только через окружение: держать их в коде нельзя.
+BOT_TOKEN = os.getenv("BOT_TOKEN", "")
 ADMIN_IDS = _ids(os.getenv("ADMIN_IDS", "8297446667"))
-GROUP_CHAT_ID = int(os.getenv("GROUP_CHAT_ID", "https://t.me/c/4421628533/3") or 0)
+GROUP_CHAT_ID = _chat_id(os.getenv("GROUP_CHAT_ID", ""))
 
 WEBAPP_URL = os.getenv("WEBAPP_URL", "https://vluxx17-creator.github.io/Panel/")
 WEBHOOK_HOST = os.getenv("WEBHOOK_HOST", "")
@@ -17,7 +27,7 @@ WEBHOOK_SECRET = os.getenv("WEBHOOK_SECRET", "")
 PORT = int(os.getenv("PORT", "8080"))
 
 DB_PATH = os.getenv("DB_PATH", "data/panel.db")
-ADMIN_PANEL_PASSWORD = os.getenv("hostlekaka", "hostlekaka")
+ADMIN_PANEL_PASSWORD = os.getenv("ADMIN_PANEL_PASSWORD", "")
 CORS_ORIGIN = os.getenv("CORS_ORIGIN", "*")
 
 # Кошелёк, с которого админ подтверждает выплаты. Приватные ключи в проекте

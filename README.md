@@ -7,7 +7,7 @@ Telegram Mini App (одна страница), бот на aiogram 3, REST API �
 
 | Путь | Назначение |
 |---|---|
-| `webapp/index.html` | мини-приложение (все экраны, темы, админ-панель) |
+| `index.html` | мини-приложение (все экраны, темы, админ-панель) |
 | `main.py` | запуск бота (polling/webhook) и API |
 | `app/bot.py` | капча, команды, решения по заявкам |
 | `app/api.py` | REST API для мини-приложения |
@@ -37,7 +37,7 @@ python main.py
 Мини-приложение — статический файл. Для локальной проверки:
 
 ```bash
-python -m http.server 5500 --directory webapp
+python -m http.server 5500
 ```
 
 Затем в консоли браузера указать адрес API:
@@ -46,9 +46,8 @@ python -m http.server 5500 --directory webapp
 
 ## Деплой
 
-**Мини-приложение — GitHub Pages:** включить Pages для ветки с каталогом `webapp/`
-(или скопировать `webapp/index.html` в корень ветки `gh-pages`), затем указать полученный
-URL в `WEBAPP_URL` и в BotFather → *Bot Settings → Menu Button*.
+**Мини-приложение — GitHub Pages:** включить Pages для ветки `main`, каталог `/ (root)` —
+будет отдаваться `index.html`. Затем указать полученный URL в `WEBAPP_URL` и в BotFather → *Bot Settings → Menu Button*.
 
 **Бот и API — Render (Web Service):**
 
