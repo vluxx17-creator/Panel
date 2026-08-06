@@ -46,9 +46,8 @@ python -m http.server 5500 --directory webapp
 
 ## Деплой
 
-**Мини-приложение — GitHub Pages:** включить Pages для ветки с каталогом `webapp/`
-(или скопировать `webapp/index.html` в корень ветки `gh-pages`), затем указать полученный
-URL в `WEBAPP_URL` и в BotFather → *Bot Settings → Menu Button*.
+**Мини-приложение — GitHub Pages:** в Settings → Pages выбрать Source = *GitHub Actions* —
+воркфлоу `.github/workflows/pages.yml` публикует каталог `webapp/`. Затем указать полученный URL в `WEBAPP_URL` и в BotFather → *Bot Settings → Menu Button*.
 
 **Бот и API — Render (Web Service):**
 
